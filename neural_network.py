@@ -17,7 +17,7 @@ def forward_pass(W_output, W_hidden, B_hidden, B_output, x, y):
     net_hidden = np.dot(x, W_hidden) + B_hidden
     out_hidden = sigmoid(net_hidden)
 
-    net_output = np.dot(W_output, out_hidden) + B_output
+    net_output = np.dot(out_hidden, W_output) + B_output
     out_output = sigmoid(net_output)
 
     cost = 0.5*(y - out_output)**2
@@ -37,7 +37,7 @@ def backward_pass(x, y, out_hidden, out_output):
 
     return W_output_c, B_output_c
 
-def new_backward_pass(x, y, output, hidden_output, W_output, W_hidden, B_output, B_hidden):
+def new_backward_pass(x, y, output, hidden_output, W_output):
     output_error = -(y - output)
     output_over_net = output*(1 - output)
     sigmoid_on_error = np.multiply(output_error, output_over_net)
@@ -57,14 +57,14 @@ def new_backward_pass(x, y, output, hidden_output, W_output, W_hidden, B_output,
     B_hidden_c = sigmoid_on_hidden_error
     B_output_c = sigmoid_on_error
 
-    print("test")
+    return W_output_c, W_hidden_c, B_hidden_c, B_output_c
 
 def neural_network():
     # training_set_data = np.genfromtxt(gzip.open(sys.argv[4], "rb"), delimiter=",")
     training_set_x = np.array([[0.1, 0.1], [0.1, 0.2]])
     training_set_y = np.array([[1, 0], [0, 1]])
 
-    n_epochs = 1
+    n_epochs = 3
     batch_size = 2
     learning_rate = 0.1
 
@@ -97,18 +97,38 @@ def neural_network():
             current_batch_x = x_batches[batch]
             current_batch_y = y_batches[batch]
 
-            sum_Woutput_change = np.zeros(W_output.size)
-            sum_Whidden_change = np.zeros(W_hidden.size)
-            sum_Bhidden_change = np.zeros(B_hidden.size)
-            sum_Boutput_change = np.zeros(B_output.size)
+            sum_Woutput_change = np.zeros((W_output.shape[0], W_output.shape[1]))
+            sum_Whidden_change = np.zeros((W_hidden.shape[0], W_hidden.shape[1]))
+            sum_Bhidden_change = np.zeros((1, B_hidden.size))
+            sum_Boutput_change = np.zeros((1, B_output.size))
 
 
-            for num in range(current_batch_x.size-1):
+            for num in range(current_batch_x.shape[0]):
                 cost, out_hidden, out_output = forward_pass(W_output, W_hidden, B_hidden, B_output, current_batch_x[num], current_batch_y[num])
-                # W_output_c, B_output_c = backward_pass(current_batch_x[num], current_batch_y[num], out_hidden, out_output)
-                new_backward_pass(current_batch_x[num], current_batch_y[num], out_output, out_hidden, W_output, W_hidden, B_output, B_hidden)
+                W_output_c, W_hidden_c, B_output_c, B_hidden_c = new_backward_pass(current_batch_x[num], current_batch_y[num], out_output, out_hidden, W_output)
+                sum_Woutput_change += W_output_c
+                sum_Whidden_change += W_hidden_c
+                sum_Bhidden_change += B_hidden_c
+                sum_Boutput_change += B_output_c
 
+            sum_Woutput_change = sum_Woutput_change / current_batch_x.size
+            sum_Whidden_change = sum_Whidden_change / current_batch_x.size
+            sum_Bhidden_change = sum_Bhidden_change / current_batch_x.size
+            sum_Boutput_change = sum_Boutput_change / current_batch_x.size
 
+            W_output = W_output - (learning_rate * sum_Woutput_change)
+            W_hidden = W_hidden - (learning_rate * sum_Whidden_change)
+            B_hidden = B_hidden - (learning_rate * sum_Bhidden_change)
+            B_output = B_output - (learning_rate * sum_Boutput_change)
+
+        print("\nWeights after Epoch " + str(epoch+1))
+        print("w1: " + str(W_hidden[0][0]) + "     w2: " + str(W_hidden[0][1]))
+        print("w3: " + str(W_hidden[1][0]) + "     w4: " + str(W_hidden[1][1]))
+        print("w5: " + str(W_output[0][0]) + "     w6: " + str(W_output[0][1]))
+        print("w7: " + str(W_output[1][0]) + "     w8: " + str(W_output[1][1]))
+        print("w9: " + str(B_hidden[0][0]) + "     w10: " + str(B_hidden[0][1]))
+        print("w11: " + str(B_output[0][0]) + "     w12: " + str(B_output[0][1]))
+    print("\nTraining complete")
  # USE BATCH TRANSPOSE FOR X AND Y
 
 neural_network()
